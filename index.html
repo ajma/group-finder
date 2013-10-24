@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+        <!-- Bootstrap core CSS -->
+        <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css">
+
+        <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!--[if lt IE 9]>
+          <script src="../../assets/js/html5shiv.js"></script>
+          <script src="../../assets/js/respond.min.js"></script>
+        <![endif]-->
+
+        <style type="text/css">
+            html { height: 100% }
+            body { height: 100%; margin: 0; padding: 0 }
+            #map-canvas { height: 100%; width: 100% }
+            #copyModal textarea { font-family: monospace; line-height: 1; font-size: 12px; }
+            .list-group-item { padding: 5px 15px; }
+        </style>
+
+    </head>
+    <body>
+        <!-- List Modal -->
+        <div class="modal fade" id="listModal" tabindex="-1" role="dialog" aria-labelledby="List of groups" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-body">
+                        <h4>Selected Groups
+                            <button id="clearList" class="btn btn-xs btn-primary">Clear All</button> </h4>
+                        <ul id="list" class="list-group">
+                        </ul>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default btn-sm" data-dismiss="modal">Close</button>
+                        <button id="copyButton" type="button" class="btn btn-primary btn-sm">
+                            <span class="glyphicon glyphicon-random"></span> Prepare Text to Copy</button>
+                    </div>
+                </div><!-- /.modal-content -->
+            </div><!-- /.modal-dialog -->
+        </div><!-- /.modal -->
+
+        <!-- Filter Modal -->
+        <div class="modal fade" id="filterModal" tabindex="-1" role="dialog" aria-labelledby="Filter groups" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-body">
+                        <h4>Day of Week 
+                            <button id="dayOfWeek_all" class="btn btn-xs btn-primary">Select All</button> 
+                            <button id="dayOfWeek_none" class="btn btn-xs btn-default">Select None</button></h4>
+                        <ul id="dayOfWeek" class="list-group">
+                        </ul>
+                        <h4>Neighbourhoods 
+                            <button id="neighbourhoods_all" class="btn btn-xs btn-primary">Select All</button> 
+                            <button id="neighbourhoods_none" class="btn btn-xs btn-default">Select None</button></h4>
+                        <ul id="neighbourhoods" class="list-group"></ul>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default btn-sm" data-dismiss="modal">Cancel</button>
+                        <button id="filter" type="button" class="btn btn-primary btn-sm">Filter</button>
+                    </div>
+                </div><!-- /.modal-content -->
+            </div><!-- /.modal-dialog -->
+        </div><!-- /.modal -->
+
+        <!-- Copy Modal -->
+        <div class="modal " id="copyModal" tabindex="-1" role="dialog" aria-labelledby="Copy" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-body">
+                        <p><b>Copy this information</b> to paste somewhere else:</p>
+                        <div style="padding-bottom: 5px;"><textarea class="form-control" rows="12" disable></textarea></div>
+                        <button type="button" class="btn btn-default btn-sm btn-block" data-dismiss="modal">Close</button>
+                    </div>
+                </div><!-- /.modal-content -->
+            </div><!-- /.modal-dialog -->
+        </div><!-- /.modal -->
+
+        <div id="map-canvas"/>
+
+        <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+        <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
+        <script type="text/javascript"src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCzAbH6Sm-p-8req__k7I5n__XhSFPbScI&sensor=true"></script>
+        <script type="text/javascript">            
+            function ExtraButtons(controlDiv, map) {
+                controlDiv.style.paddingTop = '5px';
+                controlDiv.style.paddingLeft = '5px';
+
+                var filterButton = document.createElement('button');
+                filterButton.type = 'button';
+                filterButton.className = 'btn btn-primary';
+                filterButton.innerHTML = '<span class="glyphicon glyphicon-filter"></span> Filter';
+                controlDiv.appendChild(filterButton);
+
+                google.maps.event.addDomListener(filterButton, 'click', function() {
+                    $('#filterModal').modal('toggle');
+                });
+
+                var listButtonDiv = document.createElement('span');
+                listButtonDiv.style.paddingLeft = '5px';
+                var listButton = document.createElement('button');
+                listButton.type = 'button';
+                listButton.className = 'btn btn-primary';
+                listButton.innerHTML = '<span class="glyphicon glyphicon-list"></span> List (<span id="listCount">0</span>)';
+                listButtonDiv.appendChild(listButton);
+                controlDiv.appendChild(listButtonDiv);
+
+                google.maps.event.addDomListener(listButton, 'click', function() {
+                    var list = $('#list');
+                    list.empty();
+                    for (var i=0; i < groups.length; i++) {
+                        if(groups[i].selected) {
+                            list.append('<li class="list-group-item">' + groups[i].name + '</li>')
+                        }
+                    }
+                    $('#listModal').modal('toggle');
+                });
+            }
+
+            var map = {};
+            var groups = {};
+            var markers = [];
+            var listCount = 0;
+            var initialized = false;
+            var openInfoWindow = null;
+            var groupUrl = "http://marshill.onthecity.org/groups/";
+            function initializeListFromGroups(attribute, listContainer, glyphicon) {
+                var listItems = {};
+                for (var i=0; i < groups.length; i++) {
+                    if(!listItems[groups[i][attribute]]) {
+                        listItems[groups[i][attribute]] = true;
+                    }
+                }                    
+                listItems = Object.keys(listItems).sort();
+
+                var glyphiconHtml = '';
+                if(glyphicon) glyphiconHtml = '<span class="glyphicon glyphicon-' + glyphicon +'"></span> ';
+                $.each(listItems, function(idx) {
+
+                    listContainer.append('<li class="list-group-item">' + glyphiconHtml + listItems[idx] + '</li>');
+                });
+            }
+            function initializeExtraButtons() {
+                initializeListFromGroups('day_of_week', $('#dayOfWeek'), 'ok');
+                initializeListFromGroups('neighborhood', $('#neighbourhoods'), 'ok');
+
+                $('#neighbourhoods_all').click(function() {
+                    $('#neighbourhoods li .glyphicon:hidden').each(function() { $(this).show(); });
+                });
+                $('#neighbourhoods_none').click(function() {
+                    $('#neighbourhoods li .glyphicon:visible').each(function() { $(this).hide(); });
+                });
+                $('#dayOfWeek_all').click(function() {
+                    $('#dayOfWeek li .glyphicon:hidden').each(function() { $(this).show(); });
+                });
+                $('#dayOfWeek_none').click(function() {
+                    $('#dayOfWeek li .glyphicon:visible').each(function() { $(this).hide(); });
+                });
+
+                $('#neighbourhoods li').click(function() { $(this).find('.glyphicon').toggle(); });
+
+                $('#dayOfWeek li').click(function() { $(this).find('.glyphicon').toggle(); });
+
+                $('#filter').click(function() {
+                    clearMarkers();
+                    var filter = { neighbourhoods: [], dayOfWeek : []};
+                    $('#neighbourhoods li .glyphicon:visible').each(function() {
+                        filter.neighbourhoods.push($(this).parent().text().trim());
+                    });
+                    $('#dayOfWeek li .glyphicon:visible').each(function() {
+                        filter.dayOfWeek.push($(this).parent().text().trim());
+                    });
+                    addMarkers(filter);
+                    $('#filterModal').modal('hide');
+                });
+
+                $('#clearList').click(clearList);
+                $('#copyButton').click(showCopyModal);
+            }
+            function showCopyModal() {
+                $('#listModal').modal('hide');
+                $('#copyModal').modal('show');
+
+                var text = "";
+                for (var i=0; i < groups.length; i++) {
+                    if(groups[i].selected) {
+                    text = text + Array(groups[i].name.length + 1).join('-') + '\n' +
+                        groups[i].name + '\n' +
+                        Array(groups[i].name.length + 1).join('-') + '\n' +
+                        '    TheCity link: ' + groupUrl + groups[i].id + '\n' +
+                        '    Leader: ' + squish(groups[i].leaders, 'name', ', ') + '\n' +
+                        '    Meets on: ' + groups[i].day_of_week + '\n\n' + 
+                        strip(groups[i].description) + '\n\n';
+                    }
+                }
+                $('#copyModal').find('textarea').text(text).select();
+            }
+            function addMarkers(filter) {
+                var bounds = new google.maps.LatLngBounds();
+                var shouldInclude = function(group) {
+                    return (!filter || 
+                        ($.inArray(group.neighborhood, filter.neighbourhoods) >= 0 && 
+                         $.inArray(group.day_of_week, filter.dayOfWeek) >= 0));
+                }
+                $.each(groups, function(idx, group) {
+                    if(shouldInclude(group)) {
+                        var latLng = new google.maps.LatLng(group.address.lat, group.address.long);
+                        var marker = new google.maps.Marker({
+                            position: latLng,
+                            map: map,
+                            animation: (initialized ? google.maps.Animation.DROP : null),
+                            title: group.name
+                        });
+                        markers.push(marker);
+                        bounds.extend(latLng);
+
+                        google.maps.event.addListener(marker, 'click', function () {
+                            if(openInfoWindow) {
+                                openInfoWindow.close();
+                            }
+
+                            openInfoWindow = createInfoWindow(group);
+                            openInfoWindow.open(map, marker);
+                        });
+                    }
+                });
+                map.fitBounds(bounds);
+            }
+            function squish(leaders, prop, separator) {
+                emails = [];
+                for(var i = 0; i < leaders.length; i++) {
+                    emails.push(leaders[i][prop])
+                }
+                return emails.join(separator);
+            }
+            function strip(html)
+            {
+                var tmp = document.createElement("DIV");
+                tmp.innerHTML = html;
+                return tmp.textContent || tmp.innerText || "";
+            }
+            var currentGroup = null; // currently showing group
+            function createInfoWindow(group) {
+                currentGroup = group;
+
+                var mailto_link = 'mailto:?cc=' + squish(group.leaders, 'email', ';') + 
+                    '&subject=Mars%20Hill%20Community%20Group%20Information&body=' + 
+                    encodeURIComponent(group.name + '\n\n' + groupUrl + group.id + '\n\n');
+
+                return new google.maps.InfoWindow({
+                    content: '<h4>' + group.name + '</h4>' +
+                        '<p><a href="' + mailto_link + '" class="btn btn-xs btn-default">' + '<span class="glyphicon glyphicon-envelope"></span> E-mail Info</a> ' +
+                        '<a id="toggleList" href="javascript:toggleList()" class="btn btn-xs btn-' + (group.selected ? 'danger' : 'success') + '">' + 
+                            '<span class="glyphicon glyphicon-' + (group.selected ? 'remove' : 'ok') + '"></span> <span class="text">' + 
+                            (group.selected ? 'Remove from' : 'Add to') + '</span> List</a></p>' +
+                        '<p><b>Leader</b>: ' + squish(group.leaders, 'name', ', ') + '<br />' +
+                        '<b>Meets on</b>: ' + group.day_of_week + '</p>' +
+                        '<p>' + strip(group.description) + '</p>'     
+                });
+            }
+            function toggleList() {
+                currentGroup.selected = !currentGroup.selected;
+                listCount += (currentGroup.selected ? 1 : -1);
+                $('#toggleList').toggleClass('btn-danger').toggleClass('btn-success');
+                $('#toggleList').find('span.glyphicon').toggleClass('glyphicon-remove').toggleClass('glyphicon-ok');
+                $('#toggleList').find('span.text').text(currentGroup.selected ? 'Remove from' : 'Add to');
+                $('#listCount').text(listCount);
+            }
+            function clearList() {
+                for (var i=0; i < groups.length; i++) {
+                    groups[i].selected = false;
+                }
+                listCount = 0;
+                $('#listCount').text(listCount);
+                $('#list').empty();
+            }
+            function clearMarkers() {
+                if(openInfoWindow) {
+                    openInfoWindow.close();
+                }
+
+                for (var i = 0; i < markers.length; i++ ) {
+                    markers[i].setMap(null);
+                }
+                markers = [];
+            }
+            function initialize() {
+                var mapOptions = {
+                    center: new google.maps.LatLng(47.615900, -122.198077),
+                    zoom: 14,
+                    mapTypeId: google.maps.MapTypeId.ROADMAP
+                };
+                map = new google.maps.Map(document.getElementById("map-canvas"), mapOptions);
+
+                $.getJSON( "groups.json", function( data ) {
+                    groups = data;
+                    initializeExtraButtons(); // need data before creating filter modal
+                    addMarkers();
+                    clearList(); // set selected to false
+                    initialized = true;
+                });
+                
+                var extraButtonsDiv = document.createElement('div');
+                var extraButtons = new ExtraButtons(extraButtonsDiv, map);
+
+                extraButtonsDiv.index = 1;
+                map.controls[google.maps.ControlPosition.TOP_LEFT].push(extraButtonsDiv);
+            }
+            google.maps.event.addDomListener(window, 'load', initialize);
+        </script>
+
+    </body>
+</html>
