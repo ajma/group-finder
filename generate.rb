@@ -80,13 +80,7 @@ def fetch_group(group_json)
     id = group_json["id"]
     name = group_json["name"]
     puts "  Processing group #{id}: #{name}"
-    url = group_json["internal_url"]    
-    neighborhood = group_json["nearest_neighborhood_name"]
-    if !neighborhood.nil?
-        neighborhood = neighborhood
-            .sub('Neighborhoods', '').sub('Neighborhood','')
-            .sub('Network', '').strip
-    end
+    url = group_json["internal_url"]
     campus = group_json["campus_name"]
     description = group_json["external_description"]
     day_of_week = infer_day_of_week(description)
@@ -95,7 +89,6 @@ def fetch_group(group_json)
         "id" => id,
         "name" => name, 
         "church" => campus,
-        "neighborhood" => neighborhood, 
         "description" => description, 
         "day_of_week" => day_of_week,
         "address" => fetch_address(id),

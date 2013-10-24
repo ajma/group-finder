@@ -35,8 +35,8 @@
                         </ul>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-default btn-sm" data-dismiss="modal">Close</button>
-                        <button id="copyButton" type="button" class="btn btn-primary btn-sm">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                        <button id="copyButton" type="button" class="btn btn-primary">
                             <span class="glyphicon glyphicon-random"></span> Prepare Text to Copy</button>
                     </div>
                 </div><!-- /.modal-content -->
@@ -48,19 +48,37 @@
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-body">
+                        <h4>Address</h4>
+                        <input type="numeric" class="form-control" id="address" placeholder="Enter address or zipcode">
+                        <h4>Miles away</h4>
+                        <div id="distance" class="btn-toolbar">
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-primary">All</button>
+                                <button type="button" class="btn btn-default">1</button>
+                                <button type="button" class="btn btn-default">2</button>
+                                <button type="button" class="btn btn-default">5</button>
+                                <button type="button" class="btn btn-default">10</button>
+                                <button type="button" class="btn btn-default">20</button>
+                                <button type="button" class="btn btn-default">30</button>
+                            </div>
+                        </div>
                         <h4>Day of Week 
                             <button id="dayOfWeek_all" class="btn btn-xs btn-primary">Select All</button> 
                             <button id="dayOfWeek_none" class="btn btn-xs btn-default">Select None</button></h4>
                         <ul id="dayOfWeek" class="list-group">
+                            <li class="list-group-item"><span class="glyphicon glyphicon-ok"></span> Sunday</li>
+                            <li class="list-group-item"><span class="glyphicon glyphicon-ok"></span> Monday</li>
+                            <li class="list-group-item"><span class="glyphicon glyphicon-ok"></span> Tuesday</li>
+                            <li class="list-group-item"><span class="glyphicon glyphicon-ok"></span> Wednesday</li>
+                            <li class="list-group-item"><span class="glyphicon glyphicon-ok"></span> Thursday</li>
+                            <li class="list-group-item"><span class="glyphicon glyphicon-ok"></span> Friday</li>
+                            <li class="list-group-item"><span class="glyphicon glyphicon-ok"></span> Saturday</li>
+                            <li class="list-group-item"><span class="glyphicon glyphicon-ok"></span> Not Listed</li>
                         </ul>
-                        <h4>Neighbourhoods 
-                            <button id="neighbourhoods_all" class="btn btn-xs btn-primary">Select All</button> 
-                            <button id="neighbourhoods_none" class="btn btn-xs btn-default">Select None</button></h4>
-                        <ul id="neighbourhoods" class="list-group"></ul>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-default btn-sm" data-dismiss="modal">Cancel</button>
-                        <button id="filter" type="button" class="btn btn-primary btn-sm">Filter</button>
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                        <button id="filter" type="button" class="btn btn-primary">Filter</button>
                     </div>
                 </div><!-- /.modal-content -->
             </div><!-- /.modal-dialog -->
@@ -83,7 +101,7 @@
 
         <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
         <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
-        <script type="text/javascript"src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCzAbH6Sm-p-8req__k7I5n__XhSFPbScI&sensor=true"></script>
+        <script type="text/javascript"src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCzAbH6Sm-p-8req__k7I5n__XhSFPbScI&libraries=geometry&sensor=true"></script>
         <script type="text/javascript">            
             function ExtraButtons(controlDiv, map) {
                 controlDiv.style.paddingTop = '5px';
@@ -121,37 +139,18 @@
             }
 
             var map = {};
+            var geocoder = {};
             var groups = {};
             var markers = [];
             var listCount = 0;
             var initialized = false;
             var openInfoWindow = null;
             var groupUrl = "http://marshill.onthecity.org/groups/";
-            function initializeListFromGroups(attribute, listContainer, glyphicon) {
-                var listItems = {};
-                for (var i=0; i < groups.length; i++) {
-                    if(!listItems[groups[i][attribute]]) {
-                        listItems[groups[i][attribute]] = true;
-                    }
-                }                    
-                listItems = Object.keys(listItems).sort();
-
-                var glyphiconHtml = '';
-                if(glyphicon) glyphiconHtml = '<span class="glyphicon glyphicon-' + glyphicon +'"></span> ';
-                $.each(listItems, function(idx) {
-
-                    listContainer.append('<li class="list-group-item">' + glyphiconHtml + listItems[idx] + '</li>');
-                });
-            }
+            var defaultLatLng = new google.maps.LatLng(47.615900, -122.198077);
             function initializeExtraButtons() {
-                initializeListFromGroups('day_of_week', $('#dayOfWeek'), 'ok');
-                initializeListFromGroups('neighborhood', $('#neighbourhoods'), 'ok');
-
-                $('#neighbourhoods_all').click(function() {
-                    $('#neighbourhoods li .glyphicon:hidden').each(function() { $(this).show(); });
-                });
-                $('#neighbourhoods_none').click(function() {
-                    $('#neighbourhoods li .glyphicon:visible').each(function() { $(this).hide(); });
+                $('#distance button').click(function() {
+                    $('#distance .btn-primary').toggleClass('btn-primary');
+                    $(this).toggleClass('btn-primary');
                 });
                 $('#dayOfWeek_all').click(function() {
                     $('#dayOfWeek li .glyphicon:hidden').each(function() { $(this).show(); });
@@ -160,21 +159,27 @@
                     $('#dayOfWeek li .glyphicon:visible').each(function() { $(this).hide(); });
                 });
 
-                $('#neighbourhoods li').click(function() { $(this).find('.glyphicon').toggle(); });
-
                 $('#dayOfWeek li').click(function() { $(this).find('.glyphicon').toggle(); });
 
                 $('#filter').click(function() {
                     clearMarkers();
-                    var filter = { neighbourhoods: [], dayOfWeek : []};
-                    $('#neighbourhoods li .glyphicon:visible').each(function() {
-                        filter.neighbourhoods.push($(this).parent().text().trim());
-                    });
+                    var filter = { 
+                        distance: $('#distance .btn-primary').text(),
+                        dayOfWeek : []
+                    };
                     $('#dayOfWeek li .glyphicon:visible').each(function() {
                         filter.dayOfWeek.push($(this).parent().text().trim());
                     });
-                    addMarkers(filter);
-                    $('#filterModal').modal('hide');
+                    geocoder.geocode( { 'address': $('#address').val() }, function(results, status) {
+                        if (status == google.maps.GeocoderStatus.OK) {
+                            map.setCenter(results[0].geometry.location);
+                            filter.latLng = results[0].geometry.location;
+                        } else {
+                            filter.latLng = defaultLatLng;
+                        }
+                        addMarkers(filter);
+                        $('#filterModal').modal('hide');
+                    });
                 });
 
                 $('#clearList').click(clearList);
@@ -200,14 +205,16 @@
             }
             function addMarkers(filter) {
                 var bounds = new google.maps.LatLngBounds();
-                var shouldInclude = function(group) {
-                    return (!filter || 
-                        ($.inArray(group.neighborhood, filter.neighbourhoods) >= 0 && 
-                         $.inArray(group.day_of_week, filter.dayOfWeek) >= 0));
+                var shouldInclude = function(day_of_week, latLng) {
+                    if(!filter) return true;
+                    if($.inArray(day_of_week, filter.dayOfWeek) === -1) return false;
+                    if(filter.distance === 'All') return true;
+                    var distance = google.maps.geometry.spherical.computeDistanceBetween(latLng, filter.latLng) / 1609.34;
+                    return (distance < filter.distance);
                 }
                 $.each(groups, function(idx, group) {
-                    if(shouldInclude(group)) {
-                        var latLng = new google.maps.LatLng(group.address.lat, group.address.long);
+                    var latLng = new google.maps.LatLng(group.address.lat, group.address.long);
+                    if(shouldInclude(group.day_of_week, latLng)) {
                         var marker = new google.maps.Marker({
                             position: latLng,
                             map: map,
@@ -288,8 +295,9 @@
                 markers = [];
             }
             function initialize() {
+                geocoder = new google.maps.Geocoder();
                 var mapOptions = {
-                    center: new google.maps.LatLng(47.615900, -122.198077),
+                    center: defaultLatLng,
                     zoom: 14,
                     mapTypeId: google.maps.MapTypeId.ROADMAP
                 };
