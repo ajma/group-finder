@@ -1,26 +1,40 @@
 #!/usr/bin/env ruby
 
-require "openssl"
-require "cgi"
 require "base64"
-require "net/http"
-require "uri"
+require "cgi"
+require "fileutils"
 require "json"
+require "net/http"
+require "openssl"
+require "uri"
 
-$secret_key = ""
-$user_token = ""
+$config = {
+    :user_token => "",
+    :secret_key => "",
+    :data_dir => "data", # name of directory where the group data was stored
+    # list of campuses to get groups for. The key is the name of the church and the value is where the groups are stored
+    :campuses => { "Bellevue" => "BEL.json",
+        "Sammamish" => "SAM.json",
+        "Shoreline" => "SHO.json",
+        "Ballard" => "BLD.json",
+        "Downtown Seattle" => "DTS.json",
+        "Everett" => "EVT.json",
+        "U-District" => "UWD.json",
+        "Rainier Valley" => "RNV.json",
+        "West Seattle" => "WST.json" }
+}
 
-$campus_names = ["Bellevue", "Sammamish", "Shoreline", "Ballard", "Downtown Seattle", "Everett", "U-District", "West Seattle"]
-
-$file = File.open('groups.json', 'w')
-$first = true
+$output = Hash.new
+unless File.directory?($config[:data_dir])
+    FileUtils.mkdir_p($config[:data_dir])
+end
 
 def fetch_json(url)
     unix_time = Time.now.to_i
     http_verb = "GET"
     string_to_sign = "#{unix_time}#{http_verb}#{url}"
 
-    unencoded_hmac = OpenSSL::HMAC.digest("sha256", $secret_key, string_to_sign)
+    unencoded_hmac = OpenSSL::HMAC.digest("sha256", $config[:secret_key], string_to_sign)
     unescaped_hmac = Base64.encode64(unencoded_hmac).chomp
     hmac_signature = CGI.escape(unescaped_hmac)
 
@@ -28,14 +42,16 @@ def fetch_json(url)
     http = Net::HTTP.new(uri.host, uri.port)
     http.use_ssl = true
     http.verify_mode = OpenSSL::SSL::VERIFY_NONE
-    request = Net::HTTP::Get.new(uri.request_uri)
-    request["X-City-Sig"] = hmac_signature
-    request["X-City-User-Token"] = $user_token
-    request["X-City-Time"] = unix_time
-    request["Accept"] = "application/vnd.thecity.admin.v1+json"
-    response = http.request(request)
-    
-    data = response.body
+    data = Object.new
+    http.start do |http|
+        request = Net::HTTP::Get.new(uri.request_uri)
+        request["X-City-Sig"] = hmac_signature
+        request["X-City-User-Token"] = $config[:user_token]
+        request["X-City-Time"] = unix_time
+        request["Accept"] = "application/vnd.thecity.admin.v1+json"
+        response = http.request(request)        
+        data = response.body
+    end
     return JSON.parse(data)
 end
 
@@ -51,15 +67,17 @@ def fetch_groups(page = 1)
         campus = group_json["campus_name"]
         if !campus.nil?
             campus = campus.strip
-            if $campus_names.include?(campus)
+            if $config[:campuses].keys.include?(campus)
                 group = fetch_group(group_json)
                 if !group["address"]["lat"].nil?
-                    if $first
-                        $first = false
+                    if $output[campus].nil?
+                        $output[campus] = File.new("#{$config[:data_dir]}/#{$config[:campuses][campus]}", "w")
+                        $output[campus].write("[")
                     else
-                        $file.write(",")
+                        $output[campus].write(",")
                     end
-                    $file.write(group.to_json + "\n")
+                    $output[campus].write(group.to_json + "\n")
+                    $output[campus].flush
                 else
                     puts "Skipping #{group["name"]} due to missing address"
                 end
@@ -69,7 +87,6 @@ def fetch_groups(page = 1)
             end
         end
     end
-    $file.flush
 
     if page < total_pages
         fetch_groups(page + 1)
@@ -126,21 +143,11 @@ def fetch_address(id)
     if address
         lat = address["latitude"]
         long = address["longitude"]
-        street = address["street"]
-        street2 = address["street2"]
-        city = address["city"]
-        state = address["state"]
-        zipcode = address["zipcode"]
     end
 
     return {
             "lat" => lat, 
-            "long" => long, 
-            "street" => street, 
-            "street2" => street2, 
-            "city" => city, 
-            "state" => state, 
-            "zipcode" => zipcode
+            "long" => long
         }
 end
 
@@ -159,6 +166,16 @@ def fetch_leaders(id)
     return leaders
 end
 
-$file.write("[\n")
 fetch_groups()
-$file.write("]")
+
+manifest = File.new("#{$config[:data_dir]}/manifest.json", "w")
+manifest.write("[")
+$output.keys.each_with_index do |campus, index|
+    if(index > 0)
+        manifest.write(",")
+    end
+    manifest.write("\"#{$config[:campuses][campus]}\"")
+    # write closing tag for all output files
+    $output[campus].write("]")
+end
+manifest.write("]")
