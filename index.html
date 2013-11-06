@@ -140,7 +140,7 @@
 
             var map = {};
             var geocoder = {};
-            var groups = {};
+            var groups = [];
             var markers = [];
             var listCount = 0;
             var initialized = false;
@@ -301,14 +301,21 @@
                     zoom: 14,
                     mapTypeId: google.maps.MapTypeId.ROADMAP
                 };
-                map = new google.maps.Map(document.getElementById("map-canvas"), mapOptions);
+                map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
 
-                $.getJSON( "groups.json", function( data ) {
-                    groups = data;
-                    initializeExtraButtons(); // need data before creating filter modal
-                    addMarkers();
-                    clearList(); // set selected to false
-                    initialized = true;
+                $.getJSON( 'data/manifest.json', function( manifest ) {
+                    var requests = new Array();
+                    $.each(manifest, function(idx, church) {
+                        requests.push($.getJSON( 'data/' + church, function( data ) {
+                            groups = groups.concat(data);
+                        }));
+                    });
+                    $.when.apply($, requests).done(function() {
+                        initializeExtraButtons(); // need data before creating filter modal
+                        addMarkers();
+                        clearList(); // set selected to false
+                        initialized = true;
+                    });
                 });
                 
                 var extraButtonsDiv = document.createElement('div');
