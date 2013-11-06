@@ -143,7 +143,7 @@
             var groups = [];
             var markers = [];
             var listCount = 0;
-            var initialized = false;
+            var firstLoad = true;
             var openInfoWindow = null;
             var groupUrl = "http://marshill.onthecity.org/groups/";
             var defaultLatLng = new google.maps.LatLng(47.615900, -122.198077);
@@ -218,7 +218,7 @@
                         var marker = new google.maps.Marker({
                             position: latLng,
                             map: map,
-                            animation: (initialized ? google.maps.Animation.DROP : null),
+                            animation: (firstLoad ? null : google.maps.Animation.DROP),
                             title: group.name
                         });
                         markers.push(marker);
@@ -294,6 +294,20 @@
                 }
                 markers = [];
             }
+            function loadChurches(churches) {
+                var requests = new Array();
+                $.each(churches, function(idx, church) {
+                    requests.push($.getJSON( 'data/' + church, function( data ) {
+                        groups = groups.concat(data);
+                    }));
+                });
+                $.when.apply($, requests).done(function() {
+                    initializeExtraButtons(); // need data before creating filter modal
+                    addMarkers();
+                    clearList(); // set selected to false
+                    firstLoad = false;
+                });
+            }
             function initialize() {
                 geocoder = new google.maps.Geocoder();
                 var mapOptions = {
@@ -303,20 +317,15 @@
                 };
                 map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
 
-                $.getJSON( 'data/manifest.json', function( manifest ) {
-                    var requests = new Array();
-                    $.each(manifest, function(idx, church) {
-                        requests.push($.getJSON( 'data/' + church, function( data ) {
-                            groups = groups.concat(data);
-                        }));
+                if (location.search === '') {
+                    $.getJSON( 'data/manifest.json', function( manifest ) {
+                        loadChurches(manifest);
                     });
-                    $.when.apply($, requests).done(function() {
-                        initializeExtraButtons(); // need data before creating filter modal
-                        addMarkers();
-                        clearList(); // set selected to false
-                        initialized = true;
-                    });
-                });
+                } else {
+                    var manifest = location.search.replace('?','').replace('/','').split(',');
+                    $.each(manifest, function(idx) { manifest[idx] += '.json' } );
+                    loadChurches(manifest);
+                }
                 
                 var extraButtonsDiv = document.createElement('div');
                 var extraButtons = new ExtraButtons(extraButtonsDiv, map);
