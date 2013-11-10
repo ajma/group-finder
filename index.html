@@ -149,6 +149,7 @@
             var openInfoWindow = null;
             var groupUrl = "http://marshill.onthecity.org/groups/";
             var defaultLatLng = new google.maps.LatLng(47.615900, -122.198077);
+            var days = { "Mo":"Monday", "Tu":"Tuesday", "We":"Wednesday", "Th":"Thursday", "Fr":"Friday", "Sa":"Saturday", "Su":"Sunday" };
             function initializeExtraButtons() {
                 $('#distance button').click(function() {
                     $('#distance .btn-primary').toggleClass('btn-primary');
@@ -199,7 +200,7 @@
                         Array(groups[i].name.length + 1).join('-') + '\n' +
                         '    TheCity link: ' + groupUrl + groups[i].id + '\n' +
                         '    Leader: ' + squish(groups[i].leaders, 'name', ', ') + '\n' +
-                        '    Meets on: ' + groups[i].day_of_week + '\n\n' + 
+                        '    Meets on: ' + groups[i].day + '\n\n' + 
                         strip(groups[i].description) + '\n\n';
                     }
                 }
@@ -215,8 +216,8 @@
                     return (distance < filter.distance);
                 }
                 $.each(groups, function(idx, group) {
-                    var latLng = new google.maps.LatLng(group.address.lat, group.address.long);
-                    if(shouldInclude(group.day_of_week, latLng)) {
+                    var latLng = new google.maps.LatLng(group.lat, group.long);
+                    if(shouldInclude(days[group.day], latLng)) {
                         var marker = new google.maps.Marker({
                             position: latLng,
                             map: map,
@@ -266,7 +267,7 @@
                             '<span class="glyphicon glyphicon-' + (group.selected ? 'remove' : 'ok') + '"></span> <span class="text">' + 
                             (group.selected ? 'Remove from' : 'Add to') + '</span> List</a></p>' +
                         '<p><b>Leader</b>: ' + squish(group.leaders, 'name', ', ') + '<br />' +
-                        '<b>Meets on</b>: ' + group.day_of_week + '</p>' +
+                        '<b>Meets on</b>: ' + days[group.day] + '</p>' +
                         '<p>' + strip(group.description) + '</p>'     
                 });
             }
