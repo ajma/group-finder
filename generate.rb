@@ -69,7 +69,7 @@ def fetch_groups(page = 1)
             campus = campus.strip
             if $config[:campuses].keys.include?(campus)
                 group = fetch_group(group_json)
-                if !group["address"]["lat"].nil?
+                if !group["lat"].nil?
                     if $output[campus].nil?
                         $output[campus] = File.new("#{$config[:data_dir]}/#{$config[:campuses][campus]}", "w")
                         $output[campus].write("[")
@@ -100,36 +100,49 @@ def fetch_group(group_json)
     url = group_json["internal_url"]
     campus = group_json["campus_name"]
     description = group_json["external_description"]
-    day_of_week = infer_day_of_week(description)
+    tags = fetch_tags(id)
+    address = fetch_address(id)
+    day_of_week = fetch_day_of_week(tags, description)
 
     {
         "id" => id,
         "name" => name, 
         "church" => campus,
         "description" => description, 
-        "day_of_week" => day_of_week,
-        "address" => fetch_address(id),
-        "leaders" => fetch_leaders(id)
+        "day" => day_of_week,
+        "lat" => address["lat"],
+        "long" => address["long"],
+        "leaders" => fetch_leaders(id),
+        "tags" => tags
     }    
+end
+
+def fetch_day_of_week(tags, description)
+    ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].each do |day|
+        if tags.include?(day)
+            return day[0, 2]
+        end
+    end
+    return infer_day_of_week(description)
 end
 
 def infer_day_of_week(description)
     if !description.nil?
         lower_desc = description.downcase
         if !lower_desc.match(/\bmon(day(s?))?\b/i).nil?
-            return "Monday"
+            return "Mo"
         elsif !lower_desc.match(/\btue(sday(s?))?\b/i).nil?
-            return "Tuesday"
+            return "Tu"
         elsif !lower_desc.match(/\bwed(nesday(s?))?\b/i).nil?
-            return "Wednesday"
+            return "We"
         elsif !lower_desc.match(/\bthur(sday(s?))?\b/i).nil?
-            return "Thursday"
+            return "Th"
         elsif !lower_desc.match(/\bfri(day(s?))?\b/i).nil?
-            return "Friday"
+            return "Fr"
         elsif !lower_desc.match(/\bsatur(day(s?))?\b/i).nil?
-            return "Saturday"
+            return "Sa"
         elsif !lower_desc.match(/\bsun(day(s?))?\b/i).nil?
-            return "Sunday" 
+            return "Su" 
         end
     end 
     return "Not Listed" 
@@ -165,6 +178,18 @@ def fetch_leaders(id)
 
     return leaders
 end
+
+def fetch_tags(id)
+    tags = Array.new
+    tags_url = "https://api.onthecity.org/groups/#{id}/tags"
+    tags_json = fetch_json(tags_url)["tags"]
+    tags_json.each do |tag_json|
+        tags << tag_json["name"]
+    end
+
+    return tags
+end
+
 
 fetch_groups()
 
