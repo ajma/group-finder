@@ -102,50 +102,17 @@ def fetch_group(group_json)
     description = group_json["external_description"]
     tags = fetch_tags(id)
     address = fetch_address(id)
-    day_of_week = fetch_day_of_week(tags, description)
 
     {
         "id" => id,
         "name" => name, 
         "church" => campus,
         "description" => description, 
-        "day" => day_of_week,
         "lat" => address["lat"],
         "long" => address["long"],
         "leaders" => fetch_leaders(id),
         "tags" => tags
     }    
-end
-
-def fetch_day_of_week(tags, description)
-    ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].each do |day|
-        if tags.include?(day)
-            return day[0, 2]
-        end
-    end
-    return infer_day_of_week(description)
-end
-
-def infer_day_of_week(description)
-    if !description.nil?
-        lower_desc = description.downcase
-        if !lower_desc.match(/\bmon(day(s?))?\b/i).nil?
-            return "Mo"
-        elsif !lower_desc.match(/\btue(sday(s?))?\b/i).nil?
-            return "Tu"
-        elsif !lower_desc.match(/\bwed(nesday(s?))?\b/i).nil?
-            return "We"
-        elsif !lower_desc.match(/\bthur(sday(s?))?\b/i).nil?
-            return "Th"
-        elsif !lower_desc.match(/\bfri(day(s?))?\b/i).nil?
-            return "Fr"
-        elsif !lower_desc.match(/\bsatur(day(s?))?\b/i).nil?
-            return "Sa"
-        elsif !lower_desc.match(/\bsun(day(s?))?\b/i).nil?
-            return "Su" 
-        end
-    end 
-    return "Not Listed" 
 end
 
 def fetch_address(id)

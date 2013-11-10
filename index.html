@@ -75,7 +75,6 @@
                             <li class="list-group-item"><span class="glyphicon glyphicon-ok"></span> Thursday</li>
                             <li class="list-group-item"><span class="glyphicon glyphicon-ok"></span> Friday</li>
                             <li class="list-group-item"><span class="glyphicon glyphicon-ok"></span> Saturday</li>
-                            <li class="list-group-item"><span class="glyphicon glyphicon-ok"></span> Not Listed</li>
                         </ul>
                     </div>
                     <div class="modal-footer">
@@ -147,9 +146,9 @@
             var listCount = 0;
             var firstLoad = true;
             var openInfoWindow = null;
-            var groupUrl = "http://marshill.onthecity.org/groups/";
+            var groupUrl = 'http://marshill.onthecity.org/groups/';
             var defaultLatLng = new google.maps.LatLng(47.615900, -122.198077);
-            var days = { "Mo":"Monday", "Tu":"Tuesday", "We":"Wednesday", "Th":"Thursday", "Fr":"Friday", "Sa":"Saturday", "Su":"Sunday" };
+            var days = [ 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
             function initializeExtraButtons() {
                 $('#distance button').click(function() {
                     $('#distance .btn-primary').toggleClass('btn-primary');
@@ -200,7 +199,7 @@
                         Array(groups[i].name.length + 1).join('-') + '\n' +
                         '    TheCity link: ' + groupUrl + groups[i].id + '\n' +
                         '    Leader: ' + squish(groups[i].leaders, 'name', ', ') + '\n' +
-                        '    Meets on: ' + groups[i].day + '\n\n' + 
+                        '    Meets on: ' + groups[i].day.join(', ') + '\n\n' + 
                         strip(groups[i].description) + '\n\n';
                     }
                 }
@@ -208,16 +207,17 @@
             }
             function addMarkers(filter) {
                 var bounds = new google.maps.LatLngBounds();
-                var shouldInclude = function(day_of_week, latLng) {
+                var shouldInclude = function(day, latLng) {
                     if(!filter) return true;
-                    if($.inArray(day_of_week, filter.dayOfWeek) === -1) return false;
+                    if(day.length == 0) return false;
+                    if($.grep(filter.dayOfWeek, function(i) { return $.inArray(i, day) > -1; }).length == 0) return false;
                     if(filter.distance === 'All') return true;
                     var distance = google.maps.geometry.spherical.computeDistanceBetween(latLng, filter.latLng) / 1609.34;
                     return (distance < filter.distance);
                 }
                 $.each(groups, function(idx, group) {
                     var latLng = new google.maps.LatLng(group.lat, group.long);
-                    if(shouldInclude(days[group.day], latLng)) {
+                    if(shouldInclude(group.day, latLng)) {
                         var marker = new google.maps.Marker({
                             position: latLng,
                             map: map,
@@ -240,14 +240,13 @@
                 map.fitBounds(bounds);
             }
             function squish(leaders, prop, separator) {
-                emails = [];
+                var emails = [];
                 for(var i = 0; i < leaders.length; i++) {
                     emails.push(leaders[i][prop])
                 }
                 return emails.join(separator);
             }
-            function strip(html)
-            {
+            function strip(html) {
                 var tmp = document.createElement("DIV");
                 tmp.innerHTML = html;
                 return tmp.textContent || tmp.innerText || "";
@@ -267,7 +266,7 @@
                             '<span class="glyphicon glyphicon-' + (group.selected ? 'remove' : 'ok') + '"></span> <span class="text">' + 
                             (group.selected ? 'Remove from' : 'Add to') + '</span> List</a></p>' +
                         '<p><b>Leader</b>: ' + squish(group.leaders, 'name', ', ') + '<br />' +
-                        '<b>Meets on</b>: ' + days[group.day] + '</p>' +
+                        '<b>Meets on</b>: ' + group.day.join(', ') + '</p>' +
                         '<p>' + strip(group.description) + '</p>'     
                 });
             }
@@ -301,6 +300,8 @@
                 var requests = new Array();
                 $.each(churches, function(idx, church) {
                     requests.push($.getJSON( 'data/' + church, function( data ) {
+                        // pull day tags out of tags array
+                        $.each(data, function(idx, group) { group.day =  $.grep(days, function(i) { return $.inArray(i, group.tags) > -1; }); });
                         groups = groups.concat(data);
                     }));
                 });
