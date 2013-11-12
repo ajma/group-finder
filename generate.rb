@@ -23,6 +23,13 @@ $config = {
         "Rainier Valley" => "RNV.json",
         "West Seattle" => "WST.json" }
 }
+if $config[:user_token].empty?
+    puts "Did you forget to enter a user_token in the config?"
+    exit
+elsif $config[:secret_key].empty?
+    puts "DId you forget to enter a secret_key in the config?"
+    exit
+end
 
 $output = Hash.new
 unless File.directory?($config[:data_dir])
