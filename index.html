@@ -323,7 +323,7 @@
 
                 if (location.search === '') {
                     $.getJSON( 'data/manifest.json', function( manifest ) {
-                        loadChurches(manifest);
+                        loadChurches(manifest.churches);
                     });
                 } else {
                     var manifest = location.search.replace('?','').replace('/','').split(',');

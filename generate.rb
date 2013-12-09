@@ -168,7 +168,8 @@ end
 fetch_groups()
 
 manifest = File.new("#{$config[:data_dir]}/manifest.json", "w")
-manifest.write("[")
+manifest.write("{ \"generated_on\": \"#{Time.now.utc}\",")
+manifest.write("\"churches\": [")
 $output.keys.each_with_index do |campus, index|
     if(index > 0)
         manifest.write(",")
@@ -177,4 +178,4 @@ $output.keys.each_with_index do |campus, index|
     # write closing tag for all output files
     $output[campus].write("]")
 end
-manifest.write("]")
+manifest.write("]}")
