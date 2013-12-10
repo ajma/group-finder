@@ -255,7 +255,7 @@
             function createInfoWindow(group) {
                 currentGroup = group;
 
-                var mailto_link = 'mailto:?cc=' + squish(group.leaders, 'email', ';') + 
+                var mailto_link = 'mailto:?cc=' + squish(group.leaders, 'email', ',') + 
                     '&subject=Mars%20Hill%20Community%20Group%20Information&body=' + 
                     encodeURIComponent(group.name + '\n\n' + groupUrl + group.id + '\n\n');
 
