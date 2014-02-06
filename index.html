@@ -24,6 +24,11 @@
             span.glyphicon { font-family: 'Glyphicons Halflings'; font-weight: normal; }
         </style>
 
+        <script type="text/javascript">
+            var config = {
+                printTemplate: 'print_template.html'
+            }
+        </script>
     </head>
     <body>
         <!-- List Modal -->
@@ -102,6 +107,7 @@
 
         <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
         <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.2/js/bootstrap.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/mustache.js/0.7.2/mustache.min.js"></script>
         <script type="text/javascript"src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCzAbH6Sm-p-8req__k7I5n__XhSFPbScI&libraries=geometry&sensor=true"></script>
         <script type="text/javascript">            
             function ExtraButtons(controlDiv, map) {
@@ -280,6 +286,13 @@
                 $('#toggleList').find('span.glyphicon').toggleClass('glyphicon-remove').toggleClass('glyphicon-ok');
                 $('#toggleList').find('span.text').text(currentGroup.selected ? 'Remove from' : 'Add to');
                 $('#listCount').text(listCount);
+            }
+            function printGroup() {
+                var printWindow = window.open('', '_blank', 'toolbar=0,location=0,menubar=0,height=500,width=410');
+                $.get(config.printTemplate+'?123', function(template) {
+                    var html = Mustache.to_html(template, currentGroup);
+                    printWindow.document.write(html);
+                });
             }
             function clearList() {
                 for (var i=0; i < groups.length; i++) {
