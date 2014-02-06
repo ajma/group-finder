@@ -26,6 +26,8 @@
 
         <script type="text/javascript">
             var config = {
+                manifest: 'data/manifest.json',
+                dataFiles: 'data/',
                 printTemplate: 'print_template.html'
             }
         </script>
@@ -289,7 +291,7 @@
             }
             function printGroup() {
                 var printWindow = window.open('', '_blank', 'toolbar=0,location=0,menubar=0,height=500,width=410');
-                $.get(config.printTemplate+'?123', function(template) {
+                $.get(config.printTemplate, function(template) {
                     var html = Mustache.to_html(template, currentGroup);
                     printWindow.document.write(html);
                 });
@@ -315,7 +317,7 @@
             function loadChurches(churches) {
                 var requests = new Array();
                 $.each(churches, function(idx, church) {
-                    requests.push($.getJSON( 'data/' + church, function( data ) {
+                    requests.push($.getJSON( config.dataFiles + church, function( data ) {
                         // pull day tags out of tags array
                         $.each(data, function(idx, group) { group.day =  $.grep(days, function(i) { return $.inArray(i, group.tags) > -1; }); });
                         groups = groups.concat(data);
@@ -338,7 +340,7 @@
                 map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
 
                 if (location.search === '') {
-                    $.getJSON( 'data/manifest.json', function( manifest ) {
+                    $.getJSON(config.manifest, function( manifest ) {
                         loadChurches(manifest.churches);
                     });
                 } else {
