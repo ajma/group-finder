@@ -261,10 +261,13 @@
 
                 return new google.maps.InfoWindow({
                     content: '<h4>' + group.name + '</h4>' +
-                        '<p><a href="' + mailto_link + '" class="btn btn-xs btn-default">' + '<span class="glyphicon glyphicon-envelope"></span> E-mail Info</a> ' +
+                        '<p><a href="' + mailto_link + '" class="btn btn-xs btn-default">' + 
+                            '<span class="glyphicon glyphicon-envelope"></span> E-mail Info</a> ' +
                         '<a id="toggleList" href="javascript:toggleList()" class="btn btn-xs btn-' + (group.selected ? 'danger' : 'success') + '">' + 
                             '<span class="glyphicon glyphicon-' + (group.selected ? 'remove' : 'ok') + '"></span> <span class="text">' + 
-                            (group.selected ? 'Remove from' : 'Add to') + '</span> List</a></p>' +
+                            (group.selected ? 'Remove from' : 'Add to') + '</span> List</a> ' +
+                        '<a href="javascript:printGroup()" class="btn btn-xs btn-info">' +
+                            '<span class="glyphicon glyphicon-print"></span> Print handout</a></p>' +
                         '<p><b>Leader</b>: ' + squish(group.leaders, 'name', ', ') + '<br />' +
                         '<b>Meets on</b>: ' + group.day.join(', ') + '</p>' +
                         '<p>' + strip(group.description) + '</p>'     
