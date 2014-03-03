@@ -108,15 +108,13 @@ def fetch_group(group_json)
     campus = group_json["campus_name"]
     description = group_json["external_description"]
     tags = fetch_tags(id)
-    address = fetch_address(id)
 
     {
         "id" => id,
         "name" => name, 
         "church" => campus,
         "description" => description, 
-        "lat" => address["lat"],
-        "long" => address["long"],
+        "address" => address = fetch_address(id),
         "leaders" => fetch_leaders(id),
         "tags" => tags
     }    
@@ -130,11 +128,21 @@ def fetch_address(id)
     if address
         lat = address["latitude"]
         long = address["longitude"]
+        street = address["street"]
+        street2 = address["street2"]
+        city = address["city"]
+        state = address["state"]
+        zipcode = address["zipcode"]
     end
 
     return {
             "lat" => lat, 
-            "long" => long
+            "long" => long, 
+            "street" => street, 
+            "street2" => street2, 
+            "city" => city, 
+            "state" => state, 
+            "zipcode" => zipcode
         }
 end
 
@@ -147,7 +155,8 @@ def fetch_leaders(id)
         user_url = "https://api.onthecity.org/users/#{user_id}"
         user_json = fetch_json(user_url)
         leaders << { "name" => leader_json["user_name"],
-            "email" => user_json["email"] }
+            "email" => user_json["email"],
+            "phone" => user_json["primary_phone"] }
     end
 
     return leaders
