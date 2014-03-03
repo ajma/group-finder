@@ -7,22 +7,23 @@ require "json"
 require "net/http"
 require "openssl"
 require "uri"
+require "yaml"
 
-$config = {
-    :user_token => "",
-    :secret_key => "",
-    :data_dir => "data", # name of directory where the group data was stored
-    # list of campuses to get groups for. The key is the name of the church and the value is where the groups are stored
-    :campuses => { "Bellevue" => "BEL.json",
-        "Sammamish" => "SAM.json",
-        "Shoreline" => "SHO.json",
-        "Ballard" => "BLD.json",
-        "Downtown Seattle" => "DTS.json",
-        "Everett" => "EVT.json",
-        "U-District" => "UWD.json",
-        "Rainier Valley" => "RNV.json",
-        "West Seattle" => "WST.json" }
-}
+if !File.exists?("generate.yaml")
+    puts "Missing configuration file (generate.yaml)"
+    puts
+    puts "Example:"
+    puts "    :user_token: '<user token>'"
+    puts "    :secret_key: '<secret key>'"
+    puts "    :data_dir: 'data'"
+    puts "    :campuses:"
+    puts "        Bellevue: 'BEL.json'"
+    puts "        Sammamish: 'SAM.json'"
+    exit
+end
+
+$config = YAML.load_file("generate.yaml")
+
 if $config[:user_token].empty?
     puts "Did you forget to enter a user_token in the config?"
     exit
