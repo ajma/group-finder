@@ -14,8 +14,8 @@ namespace :groups do
     desc "Create a json file with all the group's information"
     task :listings do
 
-      if !File.exists?("generate.yaml")
-        puts "Missing configuration file (generate.yaml)"
+      if !File.exists?("groups.yaml")
+        puts "Missing configuration file (groups.yaml)"
         puts
         puts "Example:"
         puts "    :user_token: '<user token>'"
@@ -28,7 +28,7 @@ namespace :groups do
         exit
       end
 
-      $config = YAML.load_file("generate.yaml")
+      $config = YAML.load_file("groups.yaml")
 
       if $config[:user_token].empty?
         puts "Did you forget to enter a user_token in the config?"
