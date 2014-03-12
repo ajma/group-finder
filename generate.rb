@@ -15,6 +15,7 @@ if !File.exists?("generate.yaml")
     puts "Example:"
     puts "    :user_token: '<user token>'"
     puts "    :secret_key: '<secret key>'"
+    puts "    :api_sleep: 0.5"
     puts "    :data_dir: 'data'"
     puts "    :campuses:"
     puts "        Bellevue: 'BEL.json'"
@@ -89,7 +90,7 @@ def fetch_groups(page = 1)
                 else
                     puts "Skipping #{group["name"]} due to missing address"
                 end
-                sleep 0.5
+                sleep $config[:api_sleep]
             else
                 puts "Skipping group from #{campus}"
             end
