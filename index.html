@@ -239,7 +239,7 @@
                     return (distance < filter.distance);
                 }
                 $.each(groups, function(idx, group) {
-                    var latLng = new google.maps.LatLng(group.lat, group.long);
+                    var latLng = new google.maps.LatLng(group.address.lat, group.address.long);
                     if(shouldInclude(group.day, latLng)) {
                         var marker = new google.maps.Marker({
                             position: latLng,
