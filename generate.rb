@@ -77,7 +77,7 @@ def fetch_groups(page = 1)
             campus = campus.strip
             if $config[:campuses].keys.include?(campus)
                 group = fetch_group(group_json)
-                if !group["lat"].nil?
+                if !group["address"]["lat"].nil?
                     if $output[campus].nil?
                         $output[campus] = File.new("#{$config[:data_dir]}/#{$config[:campuses][campus]}", "w")
                         $output[campus].write("[")
@@ -115,7 +115,7 @@ def fetch_group(group_json)
         "name" => name, 
         "church" => campus,
         "description" => description, 
-        "address" => address = fetch_address(id),
+        "address" => fetch_address(id),
         "leaders" => fetch_leaders(id),
         "tags" => tags
     }    
