@@ -39,9 +39,11 @@ namespace :groups do
       end
 
       $output = Hash.new
-      unless File.directory?($config[:data_dir])
-        FileUtils.mkdir_p($config[:data_dir])
+      $tmp_dir = ".tmp"
+      if File.directory?($tmp_dir)
+        FileUtils.rm_rf($tmp_dir)
       end
+      FileUtils.mkdir_p($tmp_dir)
 
       def fetch_json(url)
         unix_time = Time.now.to_i
@@ -86,7 +88,7 @@ namespace :groups do
                     group = fetch_group(group_json)
                     if !group["address"]["lat"].nil?
                       if $output[campus].nil?
-                        $output[campus] = File.new("#{$config[:data_dir]}/#{$config[:campuses][campus]}", "w")
+                        $output[campus] = File.new("#{$tmp_dir}/#{$config[:campuses][campus]}", "w")
                         $output[campus].write("[")
                       else
                         $output[campus].write(",")
@@ -189,7 +191,7 @@ namespace :groups do
 
             fetch_groups()
 
-            manifest = File.new("#{$config[:data_dir]}/manifest.json", "w")
+            manifest = File.new("#{$tmp_dir}/manifest.json", "w")
             manifest.write("{ \"generated_on\": \"#{Time.now.utc}\",")
             manifest.write("\"churches\": [")
             $output.keys.each_with_index do |campus, index|
@@ -202,6 +204,9 @@ namespace :groups do
           end
           manifest.write("]}")
 
+          # move tmp to data dir
+          FileUtils.rm_rf($config[:data_dir])
+          FileUtils.mv("#{$tmp_dir}", $config[:data_dir])
         end
       end
     end
