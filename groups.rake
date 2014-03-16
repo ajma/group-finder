@@ -34,7 +34,7 @@ namespace :groups do
         puts "Did you forget to enter a user_token in the config?"
         exit
       elsif $config[:secret_key].empty?
-        puts "DId you forget to enter a secret_key in the config?"
+        puts "Did you forget to enter a secret_key in the config?"
         exit
       end
 
@@ -44,6 +44,7 @@ namespace :groups do
         FileUtils.rm_rf($tmp_dir)
       end
       FileUtils.mkdir_p($tmp_dir)
+      $errorOutput = File.new("#{$tmp_dir}/errors.txt", "w");
 
       def fetch_json(url)
         unix_time = Time.now.to_i
@@ -71,6 +72,26 @@ namespace :groups do
         return JSON.parse(data)
       end
 
+      def check_data(group)
+        errors = Array.new
+        if group["description"].nil? || group["description"].empty?
+          errors << " - missing description"
+        end
+
+        if group["address"]["lat"].nil?
+          errors << " - missing address"
+        end
+
+        days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+        if (days & group["tags"]).empty?
+          errors << " - missing meeting day"
+        end
+
+        if !errors.empty?
+          $errorOutput.write("#{group["name"]} (ID: #{group["id"]}) has incomplete information:\n#{errors.join("\n")}\n\n");
+        end
+      end
+
       def fetch_groups(page = 1)
         groups_url = "https://api.onthecity.org/groups?group_types=CG&page=#{page}"
             # puts groups_url
@@ -86,6 +107,9 @@ namespace :groups do
                   campus = campus.strip
                   if $config[:campuses].keys.include?(campus)
                     group = fetch_group(group_json)
+
+                    check_data(group)
+
                     if !group["address"]["lat"].nil?
                       if $output[campus].nil?
                         $output[campus] = File.new("#{$tmp_dir}/#{$config[:campuses][campus]}", "w")
@@ -106,7 +130,8 @@ namespace :groups do
               end
             else
               puts "Invalid group json returned"
-            end 
+            end
+            $errorOutput.flush 
 
             if page < total_pages
               fetch_groups(page + 1)
@@ -116,10 +141,12 @@ namespace :groups do
           def fetch_group(group_json)
             id = group_json["id"]
             name = group_json["name"]
+            name = name.strip if name
             puts "  Processing group #{id}: #{name}"
             url = group_json["internal_url"]
             campus = group_json["campus_name"]
             description = group_json["external_description"]
+            description = description.strip if description
             tags = fetch_tags(id)
 
             {
