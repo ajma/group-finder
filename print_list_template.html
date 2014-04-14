@@ -1,0 +1,129 @@
+<!doctype html>
+<html class="no-js">
+    <head>
+        <meta charset="utf-8">
+        <title>print_temp</title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width">
+        <link href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
+        <link href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css" rel="stylesheet">
+        <style type="text/css">
+            body {
+                padding-top: 20px;
+                padding-bottom: 20px;
+                font-family: "futura-pt","Helvetica Neue",Helvetica,Arial,sans-serif;
+            }
+
+            .communitygroups {
+                font-weight: 500;
+                letter-spacing: 2px;
+                font-size: 1.55em;
+                text-rendering: optimizelegibility;
+                text-transform: uppercase;
+                color: #ae956b;
+                float: right;
+                padding-top: 5px;
+            }
+
+            .header {
+                border-bottom: 1px solid #777;
+                padding-bottom: 15px;
+            }
+            /* Custom page footer */
+            .footer {
+                margin-top: 19px;
+                padding-top: 19px;
+                color: #777;
+                border-top: 1px solid #e5e5e5;
+            }
+
+            .container {
+                max-width: 730px;
+            }
+
+            .grouptitle {
+                padding-top: 15px;
+                color: #ae956b;
+                letter-spacing: 1px;
+                font-weight: 500;
+                font-size: 1.2em;
+                border-bottom: 1px solid #ae956b;
+            }
+
+            .title {
+                letter-spacing: 1px;
+                font-weight: bold;
+                text-transform: uppercase;
+            }
+
+            .grouptext {
+                margin: 7px 7px 0 7px;
+            }
+
+            .contact {
+                margin: 0 0 0 14px;
+                font-size: 0.9em;
+            }
+
+            .description {
+                font-family: "kepler-std",Georgia,"Times New Roman",Times,serif;
+                font-size: 0.9em;
+            }
+
+            .location {
+                margin-top: 7px;
+                padding: 7px;
+                background-color: #414142;
+                color: #fff;
+                font-size: 0.8em;
+            }
+
+            .locationname {
+                text-transform: uppercase;
+            }
+
+            @media print {
+                a[href]:after {
+                    content: none !important;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <div class="communitygroups">Community Groups</div>
+                <img src="img/print_list_logo.png">
+            </div>
+
+            {{#each .}}
+            {{#row_open @index}}{{/row_open}}
+            <div class="col-sm-6">
+                <div class="grouptitle grouptext"> {{name}}</div>
+                <div class="grouptext description">{{description}}</div>
+                <div class="grouptext"><span class="title"><i class="fa fa-globe"></i> Website: </span> <a href="http://marshill.onthecity.org/groups/{{id}}">http://marshill.onthecity.org/groups/{{id}}</a></div>
+                <div class="grouptext"><span class="title"><i class="fa fa-calendar"></i> Meets on: </span> {{day}}</div>
+                <div class="grouptext"><span class="title">Contact</span>
+                    {{#each leaders}}
+                    <div class="contact">
+                        {{#if name}}<i class="fa fa-user"></i> {{name}}<br />{{/if}}
+                        {{#if phone}}<i class="fa fa-phone"></i> {{phone}}<br />{{/if}}
+                        {{#if email}}<a href="mailto:{{email}}"><i class="fa fa-envelope"></i> {{email}}</a>{{/if}}
+                    </div>
+                    {{/each}}
+                </div>
+                <div class="location">
+                    <span class="locationname">{{address.name}}</span><br>
+                    <span class="locationadd">{{address.street}} {{adddress.street2}} {{address.city}}, {{address.state}} {{address.zipcode}}</span><br />
+                </div>
+                <div><img src="http://maps.googleapis.com/maps/api/staticmap?center={{address.lat}},{{address.long}}&amp;zoom=15&amp;size=335x200&amp;markers=color:red%7C{{address.lat}},{{address.long}}&amp;sensor=true"></div>
+            </div>
+            {{#row_close @index}}{{/row_close}}
+            {{/each}}
+
+            <div class="footer">
+                <p><span class="glyphicon glyphicon-heart"></span> Mars Hill Church - Easter 2014</p>
+            </div>
+        </div>
+    </body>
+</html>

@@ -28,7 +28,8 @@
             var config = {
                 manifest: 'data/manifest.json',
                 dataFiles: 'data/',
-                printTemplate: 'print_template.html'
+                printTemplate: 'print_template.html',
+                printListTemplate: 'print_list_template.html'
             }
         </script>
     </head>
@@ -47,6 +48,8 @@
                         <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
                         <button id="copyButton" type="button" class="btn btn-primary">
                             <span class="glyphicon glyphicon-random"></span> Prepare Text to Copy</button>
+                        <button id="printListButton" type="button" class="btn btn-info">
+                            <span class="glyphicon glyphicon-print"></span> Print List</button>
                     </div>
                 </div><!-- /.modal-content -->
             </div><!-- /.modal-dialog -->
@@ -209,6 +212,7 @@
 
                 $('#clearList').click(clearList);
                 $('#copyButton').click(showCopyModal);
+                $('#printListButton').click(printListModal);
             }
             function showCopyModal() {
                 $('#listModal').modal('hide');
@@ -227,6 +231,18 @@
                     }
                 }
                 $('#copyModal').find('textarea').text(text).select();
+            }
+            function printListModal() {
+                var selectedGroups = new Array();
+                for (var i=0; i < groups.length; i++) {
+                    if(groups[i].selected) selectedGroups.push(groups[i]);
+                }
+
+                var printWindow = window.open('', '_blank', 'toolbar=0,location=0,menubar=0,height=600,width=800');
+                $.get(config.printListTemplate, function(template) {
+                    var html = Handlebars.compile(template)(selectedGroups);
+                    printWindow.document.write(html);
+                });
             }
             function addMarkers(filter) {
                 var bounds = new google.maps.LatLngBounds();
@@ -354,7 +370,7 @@
                     $.each(manifest, function(idx) { manifest[idx] += '.json' } );
                     loadChurches(manifest);
                 }
-                
+
                 var extraButtonsDiv = document.createElement('div');
                 var extraButtons = new ExtraButtons(extraButtonsDiv, map);
 
@@ -369,6 +385,12 @@
                     '&subject=Mars%20Hill%20Community%20Group%20Information&body=' + 
                     encodeURIComponent(group.name + '\n\n' + groupUrl + group.id + '\n\n');
             })
+            Handlebars.registerHelper('row_open', function(index) {
+                return (index % 2 == 0 ? '<div class="row">' : '');
+            });
+            Handlebars.registerHelper('row_close', function(index) {
+                return (index % 2 == 1 ? '</div>' : '');
+            });
         </script>
 
     </body>
